@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String       @id @default(cuid())
+  email     String       @unique
+  name      String?
+  password  String
+  role      UserRole     @default(USER)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  orders    Order[]
+  organizer Organizer?
+  profile   UserProfile?
+
+  @@map("users")
+}
+
+model UserProfile {
+  id      String  @id @default(cuid())
+  userId  String  @unique
+  country String?
+  state   String?
+  city    String?
+  pinCode String?
+  address String?
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+model Organizer {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  name      String
+  bio       String?
+  videoUrl  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  events    Event[]
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("organizers")
+}
+
+model Event {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  type        EventType
+  price       Float
+  organizerId String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  organizer   Organizer @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+  orders      Order[]
+
+  @@map("events")
+}
+
+model Order {
+  id                    String                @id @default(cuid())
+  userId                String
+  eventId               String
+  bookingDate           DateTime
+  selectedDateTime      DateTime
+  finalCost             Float
+  paymentStatus         PaymentStatus         @default(PENDING)
+  organizerConfirmation OrganizerConfirmation @default(PENDING)
+  paymentMethod         String?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  event                 Event                 @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user                  User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("orders")
+}
+
+enum UserRole {
+  USER
+  ORGANIZER
+}
+
+enum EventType {
+  CONFERENCE
+  FESTIVAL
+  SUMMIT
+  WORKSHOP
+  SEMINAR
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum OrganizerConfirmation {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
